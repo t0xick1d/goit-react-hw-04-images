@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import { useEffect, useState } from 'react';
 import ImageGallery from './ImageGallery/ImageGallery';
 import SearchBar from './SearchBar/SearchBar';
 import Loader from './Loader/Loader';
@@ -6,99 +6,95 @@ import Modal from './Modal/Modal';
 
 import './styles.css';
 
-class App extends Component {
-  state = {
-    listImg: [],
-    status: '',
-    modal: '',
-    page: 1,
-    inputValue: '',
-  };
-  componentDidMount() {
+function App() {
+  const [listImg, setListImg] = useState([]);
+  const [status, setStatus] = useState('');
+  const [modal, setModal] = useState('');
+  const [page, setPage] = useState(2);
+  const [inputValue, setinputValue] = useState();
+
+  const fetchKey = 'key=32947262-816ad506c9db86c30ae5e3e11';
+
+  useEffect(() => {
     window.addEventListener('keydown', e => {
       if (e.code === 'Escape') {
-        this.setState({
-          modal: '',
-          status: 'showImg',
-        });
+        setModal('');
+        setStatus('showImg');
       }
     });
-  }
-  onSubmitSearch = value => {
-    this.setState({ status: 'loader', inputValue: value });
+  }, []);
+
+  const onSubmitSearch = value => {
+    setStatus('loader');
+    setinputValue(value);
+    setPage(2);
     fetch(
-      `https://pixabay.com/api/?q=${value}&page=${1}&key=32947262-816ad506c9db86c30ae5e3e11&image_type=photo&orientation=horizontal&per_page=12`
+      `https://pixabay.com/api/?q=${value}&page=${1}&${fetchKey}&image_type=photo&orientation=horizontal&per_page=12`
     )
       .then(res => res.json())
       .then(data => {
-        this.setState(() => {
-          if (data.total <= 12) {
-            return { listImg: data.hits, status: 'lastPage' };
-          }
-          if (data.total > 12) {
-            return { listImg: data.hits, status: 'showImg' };
-          }
-        });
+        if (data.total <= 12) {
+          setListImg(data.hits);
+          setStatus('lastPage');
+        }
+        if (data.total > 12) {
+          setListImg(data.hits);
+          setStatus('showImg');
+        }
       });
   };
-  showModalImg = url => {
-    this.setState({ status: 'modal', modal: url });
+  const showModalImg = url => {
+    setModal(url);
+    setStatus('modal');
   };
 
-  onCloseOverlay = event => {
+  const onCloseOverlay = event => {
     if (event.target === event.currentTarget) {
-      this.setState({ status: 'showImg', modal: '' });
+      setModal('');
+      setStatus('showImg');
     }
   };
-  onNextPage = () => {
+  const onNextPage = () => {
     fetch(
-      `https://pixabay.com/api/?q=${this.state.inputValue}&page=${
-        this.state.page + 1
-      }&key=32947262-816ad506c9db86c30ae5e3e11&image_type=photo&orientation=horizontal&per_page=12`
+      `https://pixabay.com/api/?q=${inputValue}&page=${page}&${fetchKey}&image_type=photo&orientation=horizontal&per_page=12`
     )
       .then(res => res.json())
       .then(data => {
-        this.setState(prevState => {
-          if (data.total <= 12) {
-            return {
-              listImg: [...prevState.listImg, ...data.hits],
-              status: 'lastPage',
-            };
-          }
-          if (data.total > 12) {
-            return {
-              listImg: [...prevState.listImg, ...data.hits],
-              status: 'showImg',
-              page: this.state.page + 1,
-            };
-          }
-        });
+        if (data.total <= 12) {
+          setListImg(prevState => {
+            return [...prevState, ...data.hits];
+          });
+          setPage('lastPage');
+        }
+        if (data.total > 12) {
+          console.log(data.hits);
+          setListImg(prevState => {
+            return [...prevState, ...data.hits];
+          });
+          setStatus('showImg');
+          setPage(prevState => prevState + 1);
+        }
       });
   };
-  render() {
-    return (
-      <div className="App">
-        <SearchBar onSubmitSearch={this.onSubmitSearch} />
-        {this.state.status === 'loader' && <Loader />}
-        {this.state.status === 'showImg' ||
-        this.state.status === 'lastPage' ||
-        this.state.status === 'modal' ? (
-          <ImageGallery
-            listImg={this.state.listImg}
-            showModalImg={this.showModalImg}
-            status={this.state.status}
-            onClickNextPage={this.onNextPage}
-          />
-        ) : (
-          ''
-        )}
-
-        {this.state.status === 'modal' && (
-          <Modal url={this.state.modal} closeOverlay={this.onCloseOverlay} />
-        )}
-      </div>
-    );
-  }
+  return (
+    <div className="App">
+      <SearchBar onSubmitSearch={onSubmitSearch} />
+      {status === 'loader' && <Loader />}
+      {status === 'showImg' || status === 'lastPage' || status === 'modal' ? (
+        <ImageGallery
+          listImg={listImg}
+          showModalImg={showModalImg}
+          status={status}
+          onClickNextPage={onNextPage}
+        />
+      ) : (
+        ''
+      )}
+      {status === 'modal' && (
+        <Modal url={modal} closeOverlay={onCloseOverlay} />
+      )}
+    </div>
+  );
 }
 
 export default App;

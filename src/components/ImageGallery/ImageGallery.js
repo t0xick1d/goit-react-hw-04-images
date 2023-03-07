@@ -26,7 +26,7 @@ const ImageGallery = ({ listImg, showModalImg, status, onClickNextPage }) => {
 ImageGallery.propTypes = {
   listImg: PropTypes.arrayOf(
     PropTypes.shape({
-      id: PropTypes.string.isRequired,
+      id: PropTypes.number.isRequired,
     })
   ),
   showModalImg: PropTypes.func.isRequired,
